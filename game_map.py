@@ -1,11 +1,13 @@
 """Holds data related to the game map."""
 from __future__ import annotations
 
-from typing import Iterable, Optional, TYPE_CHECKING
+from typing import Iterable, Iterator, Optional, TYPE_CHECKING
+
 import numpy as np  # type: ignore
 from tcod.console import Console
 
 import tile_types
+from entity import Actor
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -29,17 +31,28 @@ class GameMap:
             (width, height), fill_value=False, order="F"
         )  # Tiles the player has seen before
 
-    def get_blocking_entity_at_location(
-        self, location_x: int, location_y: int
-    ) -> Optional[Entity]:
+    @property
+    def actors(self) -> Iterator[Actor]:
+        """Iterate over the map's living actors."""
+        yield from (
+            entity
+            for entity in self.entities
+            if isinstance(entity, Actor) and entity.is_alive
+        )
+
+    def get_blocking_entity_at_location(self, x: int, y: int) -> Optional[Entity]:
         """Returns a blocking entity at a location."""
         for entity in self.entities:
-            if (
-                entity.blocks_movement
-                and entity.x == location_x
-                and entity.y == location_y
-            ):
+            if entity.blocks_movement and entity.x == x and entity.y == y:
                 return entity
+
+        return None
+
+    def get_actor_at_location(self, x: int, y: int) -> Optional[Actor]:
+        """Returns an actor at a location."""
+        for actor in self.actors:
+            if actor.x == x and actor.y == y:
+                return actor
 
         return None
 
@@ -61,7 +74,11 @@ class GameMap:
             default=tile_types.SHROUD,
         )
 
-        for entity in self.entities:
+        entities_sorted_for_rendering = sorted(
+            self.entities, key=lambda x: x.render_order.value
+        )
+
+        for entity in entities_sorted_for_rendering:
             # Only print entities that are in the FOV
             if self.visible[entity.x, entity.y]:
                 console.print(
