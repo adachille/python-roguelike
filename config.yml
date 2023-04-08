@@ -1,0 +1,31 @@
+player:
+  fov:
+    radius: 6
+
+procgen:
+  rooms:
+    max_monsters_per_room: 2
+    max_rooms: 30
+    max_size: 10
+    min_size: 6
+
+view:
+  health_bar:
+    width: 20
+  map:
+    width: 80
+    height: 43
+  message_log:
+    height: 5
+    width: 50
+    x: 21
+    y: 45
+  messages:
+    welcome_message: Hello and welcome, adventurer, to yet another roguelike!"
+  screen:
+    width: 80
+    height: 50
+  title: "Beeg Pinguino's Roguelike"
+
+paths:
+  tileset: "dejavu10x10_gs_tc.png"
