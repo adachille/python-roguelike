@@ -7,6 +7,7 @@ import tcod.context
 from tcod.console import Console
 from tcod.map import compute_fov
 
+import exceptions
 from config import Config
 from input_handlers import MainGameEventHandler
 from message_log import MessageLog
@@ -36,7 +37,10 @@ class Engine:
         """Handle each NPC's turn."""
         for entity in set(self.game_map.actors) - {self.player}:
             if entity.ai:
-                entity.ai.perform()
+                try:
+                    entity.ai.perform()
+                except exceptions.ActionCannotBePerformed:
+                    pass  # Ignore failed action exceptions from AI.
 
     def set_context(self, context: tcod.context.Context):
         """Set the context for the engine"""

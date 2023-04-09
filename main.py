@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import copy
+import traceback
 
 import tcod
 
@@ -21,6 +22,7 @@ def main() -> None:
 
     engine = Engine(player=player)
     engine.game_map = generate_dungeon(
+        max_items_per_room=config.procgen["rooms"]["max_items_per_room"],
         max_monsters_per_room=config.procgen["rooms"]["max_monsters_per_room"],
         max_rooms=config.procgen["rooms"]["max_rooms"],
         room_min_size=config.procgen["rooms"]["min_size"],
@@ -49,11 +51,20 @@ def main() -> None:
             config.view["screen"]["height"],
             order="F",
         )
+
         while True:
             root_console.clear()
+            # TODO: can the below line not be replaced with `engine.render(console)`
             engine.event_handler.on_render(console=root_console)
             context.present(root_console)
-            engine.event_handler.handle_events(context)
+            try:
+                for event in tcod.event.wait():
+                    event = context.convert_event(event)
+                    engine.event_handler.handle_event(event)
+            except Exception:  # Handle exceptions in game.
+                traceback.print_exc()  # Print error to stderr.
+                # Then print the error to the message log.
+                engine.message_log.add_message(traceback.format_exc(), color.error)
 
 
 if __name__ == "__main__":
