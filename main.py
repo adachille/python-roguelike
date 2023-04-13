@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-import copy
 import traceback
 
 import tcod
 
 import color
-import entity_factories
+import exceptions
+import input_handlers
+import setup_game
 from config import Config
-from engine import Engine
-from procgen import generate_dungeon
+
+
+def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
+    """If the current event handler has an active Engine then save it."""
+    if isinstance(handler, input_handlers.EventHandler):
+        handler.engine.save_as(filename)
+        print("Game saved.")
 
 
 def main() -> None:
@@ -18,24 +24,7 @@ def main() -> None:
         config.paths["tileset"], 32, 8, tcod.tileset.CHARMAP_TCOD
     )
 
-    player = copy.deepcopy(entity_factories.player)
-
-    engine = Engine(player=player)
-    engine.game_map = generate_dungeon(
-        max_items_per_room=config.procgen["rooms"]["max_items_per_room"],
-        max_monsters_per_room=config.procgen["rooms"]["max_monsters_per_room"],
-        max_rooms=config.procgen["rooms"]["max_rooms"],
-        room_min_size=config.procgen["rooms"]["min_size"],
-        room_max_size=config.procgen["rooms"]["max_size"],
-        map_width=config.view["map"]["width"],
-        map_height=config.view["map"]["height"],
-        engine=engine,
-    )
-    engine.update_fov()
-
-    engine.message_log.add_message(
-        config.view["messages"]["welcome_message"], color.welcome_text
-    )
+    handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
 
     with tcod.context.new_terminal(
         config.view["screen"]["width"],
@@ -44,7 +33,6 @@ def main() -> None:
         title=config.view["title"],
         vsync=True,
     ) as context:
-        engine.set_context(context)
         # Order "F" allows us to access tiles with (x,y) instead of (y,x)
         root_console = tcod.Console(
             config.view["screen"]["width"],
@@ -52,19 +40,31 @@ def main() -> None:
             order="F",
         )
 
-        while True:
-            root_console.clear()
-            # TODO: can the below line not be replaced with `engine.render(console)`
-            engine.event_handler.on_render(console=root_console)
-            context.present(root_console)
-            try:
-                for event in tcod.event.wait():
-                    event = context.convert_event(event)
-                    engine.event_handler.handle_event(event)
-            except Exception:  # Handle exceptions in game.
-                traceback.print_exc()  # Print error to stderr.
-                # Then print the error to the message log.
-                engine.message_log.add_message(traceback.format_exc(), color.error)
+        try:
+            while True:
+                root_console.clear()
+                handler.on_render(console=root_console)
+                context.present(root_console)
+
+                try:
+                    for event in tcod.event.wait():
+                        event = context.convert_event(event)
+                        handler = handler.handle_event(event)
+                except Exception:  # Handle exceptions in game.
+                    traceback.print_exc()  # Print error to stderr.
+                    # Then print the error to the message log.
+                    if isinstance(handler, input_handlers.EventHandler):
+                        handler.engine.message_log.add_message(
+                            traceback.format_exc(), color.error
+                        )
+        except exceptions.QuitWithoutSaving:
+            raise
+        except SystemExit:  # Save and quit.
+            save_game(handler, "savegame.sav")
+            raise
+        except BaseException:  # Save on any other unexpected exception.
+            save_game(handler, "savegame.sav")
+            raise
 
 
 if __name__ == "__main__":

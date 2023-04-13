@@ -1,15 +1,15 @@
 """Engine functionality."""
 from __future__ import annotations
 
+import lzma
+import pickle
 from typing import TYPE_CHECKING
 
-import tcod.context
 from tcod.console import Console
 from tcod.map import compute_fov
 
 import exceptions
 from config import Config
-from input_handlers import MainGameEventHandler
 from message_log import MessageLog
 from render_functions import render_status_bar, render_names_at_mouse_location
 
@@ -17,7 +17,6 @@ from render_functions import render_status_bar, render_names_at_mouse_location
 if TYPE_CHECKING:
     from entity import Actor
     from game_map import GameMap
-    from input_handlers import EventHandler
 
 
 class Engine:
@@ -27,11 +26,16 @@ class Engine:
 
     def __init__(self, player: Actor):
         self.config = Config()
-        self.event_handler: EventHandler = MainGameEventHandler(self)
         self.message_log = MessageLog()
         self.mouse_location = (0, 0)
         self.player = player
         self.context = None
+
+    def save_as(self, filename: str) -> None:
+        """Save this Engine instance as a compressed file."""
+        save_data = lzma.compress(pickle.dumps(self))
+        with open(filename, "wb") as f:
+            f.write(save_data)
 
     def handle_npc_turns(self) -> None:
         """Handle each NPC's turn."""
@@ -41,10 +45,6 @@ class Engine:
                     entity.ai.perform()
                 except exceptions.ActionCannotBePerformed:
                     pass  # Ignore failed action exceptions from AI.
-
-    def set_context(self, context: tcod.context.Context):
-        """Set the context for the engine"""
-        self.context = context
 
     def update_fov(self) -> None:
         """Recompute the visible area based on the players point of view."""

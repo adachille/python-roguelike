@@ -16,6 +16,8 @@ view:
   map:
     width: 80
     height: 43
+  menu:
+    width: 24
   message_log:
     height: 5
     width: 50
