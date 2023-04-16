@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Iterator, Tuple, TYPE_CHECKING
+from typing import Iterator, List, Tuple, TYPE_CHECKING
 
 import tcod
 
@@ -128,7 +128,7 @@ def generate_dungeon(
     player = engine.player
     dungeon = GameMap(engine, map_width, map_height, entities=[player])
 
-    rooms = []
+    rooms: List[RectangularRoom] = []
 
     for r in range(max_rooms):
         room_width = random.randint(room_min_size, room_max_size)
@@ -158,5 +158,8 @@ def generate_dungeon(
 
         # Finally, append the new room to the list.
         rooms.append(new_room)
+
+    dungeon.tiles[rooms[-1].center] = tile_types.down_stairs
+    dungeon.downstairs_location = rooms[-1].center
 
     return dungeon

@@ -14,7 +14,7 @@ from engine import Engine
 import entity_factories
 import input_handlers
 from config import Config
-from procgen import generate_dungeon
+from game_map import GameWorld
 
 # Load the background image and remove the alpha channel.
 background_image = tcod.image.load("./bg-1.png")[:, :, :3]
@@ -26,7 +26,8 @@ def new_game() -> Engine:
     player = copy.deepcopy(entity_factories.player)
 
     engine = Engine(player=player)
-    engine.game_map = generate_dungeon(
+    engine.game_world = GameWorld(
+        engine=engine,
         max_items_per_room=config.procgen["rooms"]["max_items_per_room"],
         max_monsters_per_room=config.procgen["rooms"]["max_monsters_per_room"],
         max_rooms=config.procgen["rooms"]["max_rooms"],
@@ -34,8 +35,8 @@ def new_game() -> Engine:
         room_max_size=config.procgen["rooms"]["max_size"],
         map_width=config.view["map"]["width"],
         map_height=config.view["map"]["height"],
-        engine=engine,
     )
+    engine.game_world.generate_floor()
     engine.update_fov()
 
     engine.message_log.add_message(
