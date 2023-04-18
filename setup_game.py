@@ -14,7 +14,7 @@ from engine import Engine
 import entity_factories
 import input_handlers
 from config import Config
-from game_map import GameWorld
+from game_world import GameWorld
 
 # Load the background image and remove the alpha channel.
 background_image = tcod.image.load("./bg-1.png")[:, :, :3]
@@ -28,8 +28,6 @@ def new_game() -> Engine:
     engine = Engine(player=player)
     engine.game_world = GameWorld(
         engine=engine,
-        max_items_per_room=config.procgen["rooms"]["max_items_per_room"],
-        max_monsters_per_room=config.procgen["rooms"]["max_monsters_per_room"],
         max_rooms=config.procgen["rooms"]["max_rooms"],
         room_min_size=config.procgen["rooms"]["min_size"],
         room_max_size=config.procgen["rooms"]["max_size"],
